@@ -5,6 +5,13 @@ and **notes**, with a draggable, customizable edge shortcut. Built with
 **Next.js 15 + React 19 + shadcn/ui** on the front, and **Supabase**
 (Postgres + Storage + Edge Functions) on the back.
 
+## One-click deploy
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/algb20/VaultPi1)
+
+Click, sign in to Netlify once, and it builds & deploys from `netlify.toml`.
+Then register the resulting URL in the Pi Developer Portal — see `DEPLOY.md`.
+
 ## Architecture
 
 ```

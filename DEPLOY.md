@@ -7,6 +7,15 @@
 
 ## الخيار A — Netlify (موصى به)
 
+### أسرع طريقة — زر النشر بضغطة واحدة
+اضغط هذا الرابط (سيطلب تسجيل الدخول إلى Netlify مرة واحدة ثم يُنشر تلقائياً
+من `netlify.toml`):
+
+**https://app.netlify.com/start/deploy?repository=https://github.com/algb20/VaultPi1**
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/algb20/VaultPi1)
+
+### أو يدوياً
 1. ادخل إلى **app.netlify.com** ← **Add new site** ← **Import an existing project**.
 2. اختر GitHub ← المستودع **`algb20/VaultPi1`** ← الفرع **`main`**.
 3. Netlify يكتشف Next.js تلقائياً. الإعدادات (موجودة في `netlify.toml`):
