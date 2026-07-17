@@ -21,6 +21,8 @@ import {
   Star,
   ExternalLink,
   X,
+  Pencil,
+  Folder,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -28,6 +30,7 @@ import { useVault } from "@/contexts/vault-context";
 import * as db from "@/lib/vaultpi/db";
 import { formatBytes, timeAgo } from "@/lib/vaultpi/db";
 import type { ItemKind, VaultItem } from "@/lib/vaultpi/types";
+import { ItemManageModal } from "@/components/pivault/item-manage-modal";
 
 type ViewMode = "grid" | "list";
 type FilterTab = "all" | "photos" | "videos" | "documents" | "links" | "other";
@@ -64,7 +67,7 @@ function matchesTab(item: VaultItem, tab: FilterTab): boolean {
 }
 
 export function Files({ initialFilter }: { initialFilter?: string | null }) {
-  const { files, reload } = useVault();
+  const { files, folders, reload } = useVault();
 
   const filterTabKeys: FilterTab[] = ["all", "photos", "videos", "documents", "links", "other"];
   const initTab = (initialFilter && filterTabKeys.includes(initialFilter as FilterTab)
@@ -79,6 +82,8 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
   const [activeSort, setActiveSort] = useState<(typeof sortOptions)[number]>("Date");
   const [menuFileId, setMenuFileId] = useState<string | null>(null);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  const [manageItem, setManageItem] = useState<VaultItem | null>(null);
+  const [folderFilter, setFolderFilter] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveTab(initTab);
@@ -89,6 +94,7 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
   const filtered = useMemo(() => {
     let list = files.filter((f) => matchesTab(f, activeTab));
     if (starredOnly) list = list.filter((f) => f.is_starred);
+    if (folderFilter) list = list.filter((f) => f.folder_id === folderFilter);
     const sorted = [...list].sort((a, b) => {
       if (activeSort === "Name") return a.name.localeCompare(b.name);
       if (activeSort === "Size") return (b.size_bytes || 0) - (a.size_bytes || 0);
@@ -96,7 +102,7 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     return sorted;
-  }, [files, activeTab, starredOnly, activeSort]);
+  }, [files, activeTab, starredOnly, activeSort, folderFilter]);
 
   // روابط موقّعة لصور المعاينة
   useEffect(() => {
@@ -190,6 +196,29 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
             </button>
           ))}
         </div>
+        {folders.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 mt-2 scrollbar-hide">
+            <button
+              onClick={() => setFolderFilter(null)}
+              className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs whitespace-nowrap flex-shrink-0 border ${
+                folderFilter === null ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border"
+              }`}
+            >
+              <Folder className="w-3 h-3" /> All
+            </button>
+            {folders.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFolderFilter(folderFilter === f.id ? null : f.id)}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs whitespace-nowrap flex-shrink-0 border ${
+                  folderFilter === f.id ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border"
+                }`}
+              >
+                <Folder className="w-3 h-3" /> {f.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Toolbar */}
@@ -315,6 +344,9 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
                     </button>
                     {menuFileId === file.id && (
                       <div className="absolute right-0 top-8 z-10 w-44 rounded-xl bg-card border border-border shadow-xl overflow-hidden">
+                        <button onClick={() => { setManageItem(file); setMenuFileId(null); }} className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm hover:bg-secondary text-foreground">
+                          <Pencil className="w-4 h-4" /> Manage
+                        </button>
                         {file.kind === "link" ? (
                           <button onClick={() => openItem(file)} className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm hover:bg-secondary text-foreground">
                             <ExternalLink className="w-4 h-4" /> Open link
@@ -392,6 +424,8 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
           </div>
         )}
       </div>
+
+      {manageItem && <ItemManageModal item={manageItem} onClose={() => setManageItem(null)} />}
 
       {/* Bulk actions bar */}
       {selectedIds.length > 0 && (

@@ -1,0 +1,14 @@
+# إعداد نشر PiVault على Netlify
+[build]
+  command = "pnpm build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# دوال Pi للدفع (اختيارية — تحتاج PI_API_KEY في متغيّرات البيئة)
+[functions]
+  directory = "netlify/functions"
+
+# إضافة Next.js الرسمية (تُثبَّت تلقائياً من Netlify)
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

@@ -328,6 +328,11 @@ export async function setItemTags(itemId: string, tagIds: string[]) {
   }
 }
 
+export async function getItemTagIds(itemId: string): Promise<string[]> {
+  const { data } = await sb().from("item_tags").select("tag_id").eq("item_id", itemId);
+  return (data ?? []).map((r: any) => r.tag_id as string);
+}
+
 // ── سجل النشاط ──────────────────────────────────────────────────────
 export async function logActivity(action: string, detail: string, itemId: string | null) {
   try {

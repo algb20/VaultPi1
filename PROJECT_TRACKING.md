@@ -49,8 +49,14 @@
 4. **حصة التخزين الفعلية:** الحد المبدئي 5GB لكل مستخدم (`storage_quota`)،
    لكن باقة Supabase المجانية تعطي 1GB إجمالي للمشروع — للتوسّع تلزم ترقية
    الباقة.
-5. **الوسوم (Tags):** الطبقة الخلفية جاهزة (`tags`, `item_tags`, `setItemTags`)
-   وتظهر في AI؛ ينقص واجهة "إضافة وسم لعنصر" من قائمة العنصر.
+5. ✅ **الوسوم + إعادة التسمية + النقل لمجلد:** أُضيفت نافذة "Manage" لكل عنصر
+   (إعادة تسمية، نقل لمجلد، تعيين/إنشاء وسوم) + تصفية الملفات حسب المجلد.
+
+## تجهيز النشر (Deployment) — ✅ جاهز
+- `netlify.toml` + `DEPLOY.md` (خطوات Netlify وVercel وPi Portal).
+- `public/validation-key.txt` يُخدَم على `/validation-key.txt` لتحقق Pi.
+- الدخول والخزنة لم يعودا يعتمدان على خلفية App Studio (Pi SDK + Supabase مباشرة).
+- **يتبقّى (خطوة المستخدم):** ربط المستودع بـ Netlify/Vercel + تسجيل النطاق في Pi Portal.
 
 ## معلومات المشروع
 - Supabase project: `VaultPi` = `shsuznbuaxkkykvgbklb` (eu-central-1)
