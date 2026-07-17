@@ -30,6 +30,8 @@ import { useVault } from "@/contexts/vault-context";
 import * as db from "@/lib/vaultpi/db";
 import { formatBytes } from "@/lib/vaultpi/db";
 import type { VaultSettings } from "@/lib/vaultpi/types";
+import { useLanguage } from "@/components/translation-provider";
+import { LANGUAGES } from "@/lib/vaultpi/i18n";
 
 const DEFAULT_SETTINGS: VaultSettings = {
   notifications: true,
@@ -41,11 +43,12 @@ const DEFAULT_SETTINGS: VaultSettings = {
   language: "English (US)",
 };
 
-const languages = ["English (US)", "العربية", "Español", "Français", "Deutsch", "Português", "中文"];
+const languages = ["English (US)", "العربية"];
 
 export function Settings() {
   const { userData, signOut } = usePiAuth();
   const { files, storageUsed, storageQuota, profile, reload } = useVault();
+  const { setLanguage } = useLanguage();
 
   const [settings, setSettings] = useState<VaultSettings>(DEFAULT_SETTINGS);
   const [dockEnabled, setDockEnabled] = useState(true);
@@ -211,6 +214,7 @@ export function Settings() {
                   <button
                     key={lang}
                     onClick={() => {
+                      setLanguage(lang);
                       setOne("language", lang);
                       setShowLanguageMenu(false);
                     }}
