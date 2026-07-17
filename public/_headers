@@ -1,0 +1,6 @@
+# منع متصفح Pi من تخزين نسخة HTML قديمة — يجلب أحدث نسخة دائماً.
+# ملفات JS/CSS تحمل بصمات (hash) فتبقى مؤقّتة بأمان.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
