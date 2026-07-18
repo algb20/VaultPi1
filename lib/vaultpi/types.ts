@@ -40,6 +40,7 @@ export interface VaultSettings {
   encryptAll: boolean;
   offlineMode: boolean;
   language: string;
+  autoOrganize?: boolean;
 }
 
 export interface DockConfig {

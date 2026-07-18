@@ -204,6 +204,15 @@ export async function uploadFile(
   }
   const kind = opts.kindOverride ?? kindFromFile(file.type, file.name);
 
+  let folderId = opts.folderId ?? null;
+  if (!folderId && (profile?.settings?.autoOrganize ?? true)) {
+    try {
+      folderId = await ensureFolderByKind(kind);
+    } catch {
+      /* ignore auto-organize errors */
+    }
+  }
+
   const { data: item, error: e1 } = await sb()
     .from("items")
     .insert({
@@ -213,7 +222,7 @@ export async function uploadFile(
       mime_type: file.type || "application/octet-stream",
       size_bytes: file.size,
       is_encrypted: !!opts.encrypt,
-      folder_id: opts.folderId ?? null,
+      folder_id: folderId,
       upload_status: "uploading",
     })
     .select()
@@ -288,6 +297,26 @@ export async function createFolder(name: string, color = "primary"): Promise<Fol
   if (error) throw error;
   void logActivity("folder", name, null);
   return data as Folder;
+}
+
+const KIND_FOLDER: Record<string, string> = {
+  photo: "Photos",
+  video: "Videos",
+  document: "Documents",
+  audio: "Audio",
+  archive: "Archives",
+  link: "Links",
+  other: "Other",
+};
+
+// الترتيب التلقائي: يجد/ينشئ مجلداً حسب نوع الملف
+export async function ensureFolderByKind(kind: ItemKind): Promise<string | null> {
+  const name = KIND_FOLDER[kind] || "Other";
+  const folders = await listFolders();
+  const existing = folders.find((f) => f.name === name);
+  if (existing) return existing.id;
+  const created = await createFolder(name);
+  return created.id;
 }
 
 export async function deleteFolder(id: string) {

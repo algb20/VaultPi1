@@ -20,6 +20,7 @@ import {
   EyeOff,
   Wifi,
   Layers,
+  FolderCog,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -192,6 +193,9 @@ export function Settings() {
         </Row>
         <Row icon={RefreshCw} label="Auto Sync" desc="Keep the vault in sync">
           <Switch checked={settings.autoSync} onCheckedChange={(v) => setOne("autoSync", v)} />
+        </Row>
+        <Row icon={FolderCog} label="Auto-Organize" desc="Sort uploads into type folders">
+          <Switch checked={settings.autoOrganize ?? true} onCheckedChange={(v) => setOne("autoOrganize", v)} />
         </Row>
         <Row icon={Wifi} label="Offline Mode" desc="Cache items for offline access">
           <Switch checked={settings.offlineMode} onCheckedChange={(v) => setOne("offlineMode", v)} />

@@ -31,6 +31,7 @@ import * as db from "@/lib/vaultpi/db";
 import { formatBytes, timeAgo } from "@/lib/vaultpi/db";
 import type { ItemKind, VaultItem } from "@/lib/vaultpi/types";
 import { ItemManageModal } from "@/components/pivault/item-manage-modal";
+import { MediaViewer } from "@/components/pivault/media-viewer";
 
 type ViewMode = "grid" | "list";
 type FilterTab = "all" | "photos" | "videos" | "documents" | "links" | "other";
@@ -84,6 +85,7 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [manageItem, setManageItem] = useState<VaultItem | null>(null);
   const [folderFilter, setFolderFilter] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ items: VaultItem[]; index: number } | null>(null);
 
   useEffect(() => {
     setActiveTab(initTab);
@@ -122,6 +124,12 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
   const openItem = async (item: VaultItem) => {
     if (item.kind === "link" && item.link_url) {
       window.open(item.link_url, "_blank");
+      return;
+    }
+    if ((item.kind === "photo" || item.kind === "video") && item.storage_path) {
+      const media = filtered.filter((f) => (f.kind === "photo" || f.kind === "video") && f.storage_path);
+      const idx = media.findIndex((f) => f.id === item.id);
+      setViewer({ items: media, index: Math.max(0, idx) });
       return;
     }
     if (item.storage_path) {
@@ -426,6 +434,9 @@ export function Files({ initialFilter }: { initialFilter?: string | null }) {
       </div>
 
       {manageItem && <ItemManageModal item={manageItem} onClose={() => setManageItem(null)} />}
+      {viewer && (
+        <MediaViewer items={viewer.items} startIndex={viewer.index} onClose={() => setViewer(null)} />
+      )}
 
       {/* Bulk actions bar */}
       {selectedIds.length > 0 && (
