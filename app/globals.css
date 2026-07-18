@@ -146,3 +146,22 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+/* Google Translate widget — hide its banner/toolbar, keep only the translation */
+.goog-te-banner-frame,
+.goog-te-gadget-icon,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+body {
+  top: 0 !important;
+}
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+.VIpgJd-ZVi9od-l4eHX-hSRGPd,
+.VIpgJd-ZVi9od-ORHb-OEVmcd {
+  display: none !important;
+}

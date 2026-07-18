@@ -47,7 +47,9 @@ export interface DockConfig {
   side: "left" | "right";
   offset: number; // نسبة مئوية من ارتفاع الشاشة (0-100)
   opacity: number;
-  actions: string[]; // upload | note | search | starred | files
+  actions: string[]; // upload | camera | audio | note | share | search | starred | files
+  lockEnabled?: boolean;
+  pinHash?: string; // SHA-256 لرمز 3 أرقام (اختياري)
 }
 
 export interface Profile {

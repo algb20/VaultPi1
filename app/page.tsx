@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Header } from "@/components/pivault/header";
 import { BottomNav } from "@/components/pivault/bottom-nav";
 import { Dashboard } from "@/components/pivault/dashboard";
@@ -33,6 +34,43 @@ export default function HomePage() {
 
   const mainTabs: Tab[] = ["dashboard", "files", "ai", "settings"];
   const isMainNav = mainTabs.includes(activeTab);
+
+  // زر الرجوع: يتنقّل داخلياً، والخروج من التطبيق بضغطتين سريعتين
+  const activeTabRef = useRef(activeTab);
+  const showUploadRef = useRef(showUpload);
+  const lastBackRef = useRef(0);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+  useEffect(() => {
+    showUploadRef.current = showUpload;
+  }, [showUpload]);
+  useEffect(() => {
+    window.history.pushState({ v: 1 }, "");
+    const onPop = () => {
+      if (showUploadRef.current) {
+        setShowUpload(false);
+        window.history.pushState({ v: 1 }, "");
+        return;
+      }
+      if (activeTabRef.current !== "dashboard") {
+        setActiveTab("dashboard");
+        window.history.pushState({ v: 1 }, "");
+        return;
+      }
+      const now = Date.now();
+      if (now - lastBackRef.current < 2000) {
+        window.removeEventListener("popstate", onPop);
+        window.history.back();
+        return;
+      }
+      lastBackRef.current = now;
+      toast("اضغط رجوع مرة أخرى للخروج · Press back again to exit");
+      window.history.pushState({ v: 1 }, "");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   const openUpload = (initial: UploadType = null) => {
     setUploadInitial(initial);

@@ -17,7 +17,7 @@ interface HeaderProps {
 export function Header({ title, showSearch, onSearchClick, onPrivacyClick }: HeaderProps) {
   const { userData } = usePiAuth();
   const { theme, setTheme } = useTheme();
-  const { language, setLanguage } = useLanguage();
+  const { code, setLanguageCode } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [showLang, setShowLang] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -67,18 +67,18 @@ export function Header({ title, showSearch, onSearchClick, onPrivacyClick }: Hea
           {showLang && (
             <>
               <div className="fixed inset-0 z-20" onClick={() => setShowLang(false)} />
-              <div className="absolute right-0 top-10 z-30 w-36 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+              <div className="notranslate absolute right-0 top-10 z-30 w-44 max-h-72 overflow-y-auto bg-card border border-border rounded-xl shadow-xl">
                 {LANGUAGES.map((l) => (
                   <button
-                    key={l.code}
+                    key={l.label + l.code}
                     onClick={() => {
-                      setLanguage(l.label);
+                      setLanguageCode(l.code);
                       setShowLang(false);
                     }}
                     className="w-full px-3 py-2.5 text-sm text-left hover:bg-secondary flex items-center justify-between text-foreground"
                   >
                     {l.label}
-                    {language === l.label && <Check className="w-3.5 h-3.5 text-primary" />}
+                    {code === l.code && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
                   </button>
                 ))}
               </div>

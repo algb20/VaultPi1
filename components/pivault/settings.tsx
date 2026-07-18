@@ -49,8 +49,9 @@ const languages = ["English (US)", "العربية"];
 export function Settings() {
   const { userData, signOut } = usePiAuth();
   const { files, storageUsed, storageQuota, profile, reload } = useVault();
-  const { setLanguage } = useLanguage();
+  const { code: langCode, setLanguageCode } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const currentLang = LANGUAGES.find((l) => l.code === langCode)?.label ?? "English";
 
   const [settings, setSettings] = useState<VaultSettings>(DEFAULT_SETTINGS);
   const [dockEnabled, setDockEnabled] = useState(true);
@@ -204,29 +205,31 @@ export function Settings() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">Language</p>
-            <p className="text-xs text-muted-foreground">{settings.language}</p>
+            <p className="text-xs text-muted-foreground notranslate">{currentLang}</p>
           </div>
           <div className="relative">
             <button onClick={() => setShowLanguageMenu(!showLanguageMenu)} className="flex items-center gap-1 text-xs text-primary font-medium">
               Change <ChevronRight className="w-3 h-3" />
             </button>
             {showLanguageMenu && (
-              <div className="absolute right-0 top-6 z-20 w-40 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
-                {languages.map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => {
-                      setLanguage(lang);
-                      setOne("language", lang);
-                      setShowLanguageMenu(false);
-                    }}
-                    className="w-full px-4 py-2.5 text-xs text-left hover:bg-secondary flex items-center justify-between"
-                  >
-                    {lang}
-                    {settings.language === lang && <Check className="w-3 h-3 text-primary" />}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowLanguageMenu(false)} />
+                <div className="notranslate absolute right-0 top-6 z-20 w-44 max-h-72 overflow-y-auto bg-card border border-border rounded-xl shadow-xl">
+                  {LANGUAGES.map((l) => (
+                    <button
+                      key={l.label + l.code}
+                      onClick={() => {
+                        setLanguageCode(l.code);
+                        setShowLanguageMenu(false);
+                      }}
+                      className="w-full px-4 py-2.5 text-xs text-left hover:bg-secondary flex items-center justify-between"
+                    >
+                      {l.label}
+                      {langCode === l.code && <Check className="w-3 h-3 text-primary flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

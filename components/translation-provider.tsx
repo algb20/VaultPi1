@@ -1,9 +1,9 @@
 "use client";
 
 // ═══════════════════════════════════════════════════════════════════
-// LanguageProvider — محرّك ترجمة واجهة محلّي (DOM + MutationObserver).
-// يترجم النصوص الثابتة للواجهة فقط عبر قاموس محلّي، ويضبط RTL للعربية.
-// لا يرسل أي بيانات خارج المتصفح.
+// LanguageProvider — ترجمة كامل الواجهة لأي لغة عالمية عبر Google Translate.
+// يستخدم عنصر الترجمة المخفي + القائمة (.goog-te-combo) للتبديل الفوري،
+// مع كوكي googtrans للاستمرارية، وضبط اتجاه RTL تلقائياً.
 // ═══════════════════════════════════════════════════════════════════
 
 import {
@@ -14,137 +14,102 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { DICTS, labelToCode, isRtl } from "@/lib/vaultpi/i18n";
+import { isRtlCode } from "@/lib/vaultpi/i18n";
 
-const STORAGE_KEY = "vaultpi.lang";
+const STORAGE_KEY = "vaultpi.lang.code";
 
-// ── محرّك الترجمة (على مستوى الوحدة) ────────────────────────────────
-let observer: MutationObserver | null = null;
-let activeDict: Record<string, string> | null = null;
-const originals = new Map<Text, string>();
-const originalPlaceholders = new Map<Element, string>();
-
-function translateTextNode(node: Text, dict: Record<string, string>) {
-  const raw = node.nodeValue ?? "";
-  const key = raw.trim();
-  if (!key) return;
-  const tr = dict[key];
-  if (tr && tr !== key) {
-    if (!originals.has(node)) originals.set(node, raw);
-    const next = raw.replace(key, tr);
-    if (node.nodeValue !== next) node.nodeValue = next;
+declare global {
+  interface Window {
+    googleTranslateElementInit?: () => void;
+    google?: any;
   }
 }
 
-function translateTree(root: Node, dict: Record<string, string>) {
-  if (root.nodeType === Node.TEXT_NODE) {
-    translateTextNode(root as Text, dict);
-    return;
+function setGoogTransCookie(code: string) {
+  const value = !code || code === "en" ? "" : `/en/${code}`;
+  const write = (domain?: string) => {
+    document.cookie =
+      `googtrans=${value};path=/` + (domain ? `;domain=${domain}` : "");
+  };
+  try {
+    write();
+    const host = location.hostname;
+    write(host);
+    write("." + host);
+  } catch {
+    /* ignore */
   }
-  if (root.nodeType !== Node.ELEMENT_NODE) return;
-
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode: (n) => {
-      const tag = n.parentElement?.tagName;
-      if (tag === "SCRIPT" || tag === "STYLE" || tag === "NOSCRIPT" || tag === "TEXTAREA")
-        return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    },
-  });
-  const texts: Text[] = [];
-  while (walker.nextNode()) texts.push(walker.currentNode as Text);
-  texts.forEach((t) => translateTextNode(t, dict));
-
-  (root as Element).querySelectorAll?.("[placeholder]").forEach((el) => {
-    const key = (el.getAttribute("placeholder") || "").trim();
-    if (dict[key]) {
-      if (!originalPlaceholders.has(el)) originalPlaceholders.set(el, el.getAttribute("placeholder")!);
-      el.setAttribute("placeholder", dict[key]);
-    }
-  });
 }
 
-function startTranslation(dict: Record<string, string>) {
-  activeDict = dict;
-  translateTree(document.body, dict);
-  observer = new MutationObserver((muts) => {
-    if (!activeDict) return;
-    for (const m of muts) {
-      if (m.type === "childList") {
-        m.addedNodes.forEach((n) => translateTree(n, activeDict!));
-      } else if (m.type === "characterData") {
-        translateTextNode(m.target as Text, activeDict!);
-      }
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+function applyViaCombo(code: string): boolean {
+  const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+  if (!combo) return false;
+  combo.value = code === "en" ? "" : code;
+  combo.dispatchEvent(new Event("change"));
+  return true;
 }
 
-function resetTranslation() {
-  observer?.disconnect();
-  observer = null;
-  activeDict = null;
-  originals.forEach((val, node) => {
+function injectWidget() {
+  if (document.getElementById("google-translate-script")) return;
+  window.googleTranslateElementInit = () => {
     try {
-      if (node.nodeValue !== val) node.nodeValue = val;
+      // eslint-disable-next-line new-cap
+      new window.google.translate.TranslateElement(
+        { pageLanguage: "en", autoDisplay: false },
+        "google_translate_element",
+      );
     } catch {
-      /* node detached */
+      /* ignore */
     }
-  });
-  originals.clear();
-  originalPlaceholders.forEach((val, el) => {
-    try {
-      el.setAttribute("placeholder", val);
-    } catch {
-      /* detached */
-    }
-  });
-  originalPlaceholders.clear();
+  };
+  const s = document.createElement("script");
+  s.id = "google-translate-script";
+  s.src =
+    "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+  s.async = true;
+  document.body.appendChild(s);
 }
 
-// ── السياق (Context) ────────────────────────────────────────────────
 interface LangCtx {
-  language: string;
-  setLanguage: (label: string) => void;
+  code: string;
+  setLanguageCode: (code: string) => void;
 }
 const Ctx = createContext<LangCtx | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<string>("English (US)");
-
-  const applyEngine = useCallback((label: string) => {
-    if (typeof document === "undefined") return;
-    resetTranslation();
-    const html = document.documentElement;
-    const code = labelToCode(label);
-    if (isRtl(label)) {
-      html.setAttribute("dir", "rtl");
-    } else {
-      html.setAttribute("dir", "ltr");
-    }
-    html.setAttribute("lang", code);
-    const dict = DICTS[code];
-    if (dict && Object.keys(dict).length) startTranslation(dict);
-  }, []);
+  const [code, setCode] = useState("en");
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) || "English (US)";
-    setLanguageState(saved);
-    // نؤخّر قليلاً حتى تُرسم الواجهة الأولى
-    const id = setTimeout(() => applyEngine(saved), 0);
-    return () => clearTimeout(id);
-  }, [applyEngine]);
+    const saved = localStorage.getItem(STORAGE_KEY) || "en";
+    setCode(saved);
+    document.documentElement.dir = isRtlCode(saved) ? "rtl" : "ltr";
+    injectWidget();
+    if (saved !== "en") {
+      setGoogTransCookie(saved);
+      let tries = 0;
+      const iv = setInterval(() => {
+        if (applyViaCombo(saved) || ++tries > 60) clearInterval(iv);
+      }, 250);
+    }
+  }, []);
 
-  const setLanguage = useCallback(
-    (label: string) => {
-      setLanguageState(label);
-      localStorage.setItem(STORAGE_KEY, label);
-      applyEngine(label);
-    },
-    [applyEngine],
+  const setLanguageCode = useCallback((c: string) => {
+    localStorage.setItem(STORAGE_KEY, c);
+    setCode(c);
+    document.documentElement.dir = isRtlCode(c) ? "rtl" : "ltr";
+    setGoogTransCookie(c);
+    if (!applyViaCombo(c)) {
+      // القائمة لم تُحمّل بعد — أعد التحميل ليطبّق الكوكي
+      location.reload();
+    }
+  }, []);
+
+  return (
+    <Ctx.Provider value={{ code, setLanguageCode }}>
+      <div id="google_translate_element" aria-hidden="true" style={{ display: "none" }} />
+      {children}
+    </Ctx.Provider>
   );
-
-  return <Ctx.Provider value={{ language, setLanguage }}>{children}</Ctx.Provider>;
 }
 
 export function useLanguage() {
