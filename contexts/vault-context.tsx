@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import * as db from "@/lib/vaultpi/db";
+import { getSupabase } from "@/lib/vaultpi/client";
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import type { Activity, Folder, Profile, Tag, VaultItem } from "@/lib/vaultpi/types";
 
@@ -63,6 +64,42 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void reload();
+  }, [reload]);
+
+  // المزامنة التلقائية: تحديث عند العودة للتطبيق + بث لحظي من Supabase Realtime
+  useEffect(() => {
+    const sb = getSupabase();
+    let channel: ReturnType<typeof sb.channel> | null = null;
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void reload();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+
+    sb.auth.getSession().then(({ data }) => {
+      const uid = data.session?.user?.id;
+      if (!uid) return;
+      channel = sb
+        .channel("vault-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "items", filter: `user_id=eq.${uid}` },
+          () => void reload(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "folders", filter: `user_id=eq.${uid}` },
+          () => void reload(),
+        )
+        .subscribe();
+    });
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      if (channel) sb.removeChannel(channel);
+    };
   }, [reload]);
 
   const files = items.filter((i) => i.kind !== "note");

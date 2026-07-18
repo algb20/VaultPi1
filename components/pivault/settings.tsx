@@ -32,6 +32,7 @@ import { formatBytes } from "@/lib/vaultpi/db";
 import type { VaultSettings } from "@/lib/vaultpi/types";
 import { useLanguage } from "@/components/translation-provider";
 import { LANGUAGES } from "@/lib/vaultpi/i18n";
+import { useTheme } from "next-themes";
 
 const DEFAULT_SETTINGS: VaultSettings = {
   notifications: true,
@@ -49,6 +50,7 @@ export function Settings() {
   const { userData, signOut } = usePiAuth();
   const { files, storageUsed, storageQuota, profile, reload } = useVault();
   const { setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
 
   const [settings, setSettings] = useState<VaultSettings>(DEFAULT_SETTINGS);
   const [dockEnabled, setDockEnabled] = useState(true);
@@ -193,8 +195,8 @@ export function Settings() {
         <Row icon={Wifi} label="Offline Mode" desc="Cache items for offline access">
           <Switch checked={settings.offlineMode} onCheckedChange={(v) => setOne("offlineMode", v)} />
         </Row>
-        <Row icon={Moon} label="Dark Mode" desc="Always use dark theme">
-          <Switch checked={settings.darkMode} onCheckedChange={(v) => setOne("darkMode", v)} />
+        <Row icon={Moon} label="Dark Mode" desc="Switch between light and dark">
+          <Switch checked={theme !== "light"} onCheckedChange={(v) => setTheme(v ? "dark" : "light")} />
         </Row>
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
